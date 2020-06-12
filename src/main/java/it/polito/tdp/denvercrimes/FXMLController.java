@@ -1,9 +1,12 @@
 package it.polito.tdp.denvercrimes;
 
 import java.net.URL;
+import java.time.DateTimeException;
+import java.time.LocalDate;
 import java.util.ResourceBundle;
 
 import it.polito.tdp.denvercrimes.model.Model;
+import it.polito.tdp.denvercrimes.model.Vicino;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -22,13 +25,13 @@ public class FXMLController {
     private URL location;
 
     @FXML
-    private ComboBox<?> boxAnno;
+    private ComboBox<Integer> boxAnno;
 
     @FXML
-    private ComboBox<?> boxMese;
+    private ComboBox<Integer> boxMese;
 
     @FXML
-    private ComboBox<?> boxGiorno;
+    private ComboBox<Integer> boxGiorno;
 
     @FXML
     private Button btnCreaReteCittadina;
@@ -44,12 +47,53 @@ public class FXMLController {
 
     @FXML
     void doCreaReteCittadina(ActionEvent event) {
-
+    	txtResult.clear();
+    	Integer anno = boxAnno.getValue();
+    	if(anno == null) {
+    		txtResult.appendText("SELEZIONA ANNO!");
+    		return ;
+    	}
+    	model.creaGrafo(anno);
+    	txtResult.appendText("Grafo creato!\n\n");
+    	
+    	for(Integer distretto: model.getDistretti()) {
+    		txtResult.appendText(distretto + "\n");
+    		for(Vicino v: model.trovaVicini(distretto)) {
+    			txtResult.appendText("distretto: "+v.getId()+", distanza media: "+v.getDistanzaMedia()+"\n");
+    		}
+    	}
     }
 
     @FXML
     void doSimula(ActionEvent event) {
-
+    	txtResult.clear();
+    	Integer anno, mese, giorno, N;
+    	try {
+    		N = Integer.parseInt(txtN.getText());
+    	}catch(NumberFormatException e) {
+    		txtResult.appendText("Formato N non corretto");
+    		return ;
+    	}
+    	
+    	anno = this.boxAnno.getValue();
+    	mese = boxMese.getValue();
+    	giorno = boxGiorno.getValue();
+    	
+    	if(anno == null || mese == null || giorno == null) {
+    		txtResult.appendText("Seleziona tutti i campi");
+    		return ;
+    	}
+    	
+    	try {
+    		LocalDate.of(anno, mese, giorno);
+    	}catch(DateTimeException e) {
+    		txtResult.appendText("Data non corretta");
+    		return ;
+    	}
+    	
+    	txtResult.appendText("Simulo con "+N+" agenti");
+    	txtResult.appendText("\nCRIMINI MAL GESTITI: "+this.model.simula(anno, mese, giorno, N));
+    	
     }
 
     @FXML
@@ -66,5 +110,11 @@ public class FXMLController {
 
 	public void setModel(Model model) {
 		this.model = model;
+		this.boxAnno.getItems().clear();
+		this.boxAnno.getItems().addAll(model.getAnni());
+		this.boxMese.getItems().clear();
+		this.boxMese.getItems().addAll(model.getMesi());
+		this.boxGiorno.getItems().clear();
+		this.boxGiorno.getItems().addAll(model.getGiorni());
 	}
 }
